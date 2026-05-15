@@ -1,0 +1,70 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.dependencies import get_db
+from app.schemas.payment import (
+    CreatePaymentRequest,
+    PaymentResponse,
+)
+from app.schemas.refund import RefundRequest
+from app.services.payments import PaymentService
+
+router = APIRouter(tags=["Payments"])
+
+
+@router.post(
+    "/payments",
+    response_model=PaymentResponse,
+    status_code=201,
+)
+async def create_payment(
+    payload: CreatePaymentRequest,
+    db: AsyncSession = Depends(get_db),
+):
+
+    service = PaymentService(db)
+
+    payment = await service.create_payment(payload)
+
+    return payment
+
+
+@router.get(
+    "/payments/{payment_id}",
+    response_model=PaymentResponse,
+)
+async def get_payment(
+    payment_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+
+    service = PaymentService(db)
+
+    payment = await service.get_payment(payment_id)
+
+    if not payment:
+        raise HTTPException(
+            status_code=404,
+            detail="Payment not found",
+        )
+
+    return payment
+
+
+@router.post(
+    "/payments/{payment_id}/refund",
+)
+async def refund_payment(
+    payment_id: int,
+    payload: RefundRequest,
+    db: AsyncSession = Depends(get_db),
+):
+
+    service = PaymentService(db)
+
+    refund = await service.refund_payment(
+        payment_id=payment_id,
+        payload=payload,
+    )
+
+    return refund
