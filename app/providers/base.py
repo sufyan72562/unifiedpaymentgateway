@@ -20,3 +20,10 @@ class BasePaymentProvider(ABC):
         payload: RefundRequest,
     ) -> dict:
         pass
+
+    @abstractmethod
+    def normalize_payment_response(
+        self,
+        response: dict,
+    ) -> dict:
+        pass

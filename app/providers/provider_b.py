@@ -1,30 +1,42 @@
+from decimal import Decimal
+
+from app.core.enums import PaymentStatus
 from app.providers.base import BasePaymentProvider
-from app.schemas.payment import CreatePaymentRequest
-from app.schemas.refund import RefundRequest
 
 
 class ProviderB(BasePaymentProvider):
 
     async def create_payment(
         self,
-        payload: CreatePaymentRequest,
+        payload,
     ) -> dict:
+
         return {
-            "transactionId": "txn_987",
+            "transactionId": "txn_B_987",
             "paymentStatus": "INITIATED",
-            "totalAmount": str(payload.amount),
-            "currencyCode": payload.currency,
+            "totalAmount": "100.50",
+            "currencyCode": "SAR",
         }
 
     async def refund_payment(
         self,
-        provider_reference: str,
-        payload: RefundRequest,
+        provider_reference,
+        payload,
     ) -> dict:
+
         return {
-            "refundTransactionId": "refund_222",
-            "refundStatus": "DONE",
-            "transactionId": provider_reference,
-            "refundAmount": str(payload.amount),
-            "reason": payload.reason,
+            "refund_id": "refund_222",
+        }
+
+    def normalize_payment_response(
+        self,
+        response: dict,
+    ) -> dict:
+
+        return {
+            "provider_reference": response["transactionId"],
+            "amount": Decimal(response["totalAmount"]),
+            "currency": response["currencyCode"],
+            "status": PaymentStatus.PENDING.value,
+            "raw_response": response,
         }

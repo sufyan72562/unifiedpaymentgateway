@@ -1,6 +1,8 @@
-from app.providers.base import BasePaymentProvider
+from decimal import Decimal
 from app.schemas.payment import CreatePaymentRequest
 from app.schemas.refund import RefundRequest
+from app.core.enums import PaymentStatus
+from app.providers.base import BasePaymentProvider
 
 
 class ProviderA(BasePaymentProvider):
@@ -11,10 +13,10 @@ class ProviderA(BasePaymentProvider):
     ) -> dict:
 
         return {
-            "id": "pay_123",
+            "id": "pay_A_123",
             "state": "created",
-            "amount": str(payload.amount),
-            "currency": payload.currency,
+            "amount": 10050,
+            "currency": "SAR",
         }
 
     async def refund_payment(
@@ -25,5 +27,17 @@ class ProviderA(BasePaymentProvider):
 
         return {
             "refund_id": "refund_123",
-            "status": "success",
+        }
+
+    def normalize_payment_response(
+        self,
+        response: dict,
+    ) -> dict:
+
+        return {
+            "provider_reference": response["id"],
+            "amount": Decimal(response["amount"]) / Decimal("100"),
+            "currency": response["currency"],
+            "status": PaymentStatus.PENDING.value,
+            "raw_response": response,
         }
