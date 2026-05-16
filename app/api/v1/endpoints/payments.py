@@ -6,8 +6,9 @@ from app.schemas.payment import (
     CreatePaymentRequest,
     PaymentResponse,
 )
-from app.schemas.refund import RefundRequest, RefundResponse
+from app.schemas.refund import RefundRequest
 from app.services.payments import PaymentService
+from app.services.refund import RefundService
 
 router = APIRouter(tags=["Payments"])
 
@@ -56,7 +57,7 @@ async def refund_payment(
     db: AsyncSession = Depends(get_db),
 ):
 
-    service = PaymentService(db)
+    service = RefundService(db)
 
     refund = await service.refund_payment(
         payment_id=payment_id,
