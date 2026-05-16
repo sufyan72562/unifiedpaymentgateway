@@ -43,3 +43,15 @@ class PaymentRepository(BaseRepository[Payment]):
 
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
+    
+    async def get_by_id_for_update(self,
+                                   payment_id: int) -> Payment | None:
+        query = (
+            select(Payment)
+            .where(Payment.id == payment_id)
+            .with_for_update()
+        )
+
+        result = await self.db.execute(query)
+
+        return result.scalar_one_or_none()
