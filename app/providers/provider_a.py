@@ -1,4 +1,5 @@
 from decimal import Decimal
+from uuid import uuid4
 from app.schemas.payment import CreatePaymentRequest
 from app.schemas.refund import RefundRequest
 from app.core.enums import PaymentStatus
@@ -12,12 +13,11 @@ class ProviderA(BasePaymentProvider):
         payload: CreatePaymentRequest,
         idempotency_key: str | None = None,
     ) -> dict:
-
         return {
-            "id": "pay_A_123",
+            "id": f"pay_A_{uuid4().hex[:10]}",
             "state": "created",
-            "amount": 10050,
-            "currency": "SAR",
+            "amount": int(payload.amount * 100),
+            "currency": payload.currency,
         }
 
     async def refund_payment(
@@ -25,9 +25,8 @@ class ProviderA(BasePaymentProvider):
         provider_reference: str,
         payload: RefundRequest,
     ) -> dict:
-
         return {
-            "refund_id": "refund_123",
+            "refund_id": f"refund_A_{uuid4().hex[:10]}",
         }
 
     def normalize_payment_response(
