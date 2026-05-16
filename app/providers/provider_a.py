@@ -41,3 +41,20 @@ class ProviderA(BasePaymentProvider):
             "status": PaymentStatus.PENDING.value,
             "raw_response": response,
         }
+    
+    def normalize_webhook_payload(self, payload: dict) -> dict:
+        status_map = {
+            "created": PaymentStatus.PENDING.value,
+            "paid": PaymentStatus.SUCCESS.value,
+            "failed": PaymentStatus.FAILED.value,
+            "refunded": PaymentStatus.REFUNDED.value,
+        }
+
+        return {
+            "provider_reference": payload["id"],
+            "status": status_map.get(
+                payload["state"],
+                PaymentStatus.PENDING.value,
+            ),
+            "raw_response": payload,
+        }

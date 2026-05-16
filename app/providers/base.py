@@ -27,3 +27,8 @@ class BasePaymentProvider(ABC):
         response: dict,
     ) -> dict:
         pass
+
+
+    @abstractmethod
+    def normalize_webhook_payload(self, payload: dict) -> dict:
+        pass

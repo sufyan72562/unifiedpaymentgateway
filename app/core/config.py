@@ -25,6 +25,11 @@ class Settings(BaseSettings):
     # -------------------
     DATABASE_URL: str
 
+    # -------------------
+    # WEBHOOK
+    # -------------------
+    WEBHOOK_SECRET: str
+
 
 
 settings = Settings()

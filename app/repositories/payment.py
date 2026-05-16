@@ -21,3 +21,14 @@ class PaymentRepository(BaseRepository[Payment]):
 
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
+    
+    async def get_by_provider_reference(
+        self,
+        provider_reference: str,
+    ) -> Payment | None:
+        query = select(Payment).where(
+            Payment.provider_reference == provider_reference
+        )
+
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
