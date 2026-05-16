@@ -3,13 +3,17 @@ from app.core.enums import PaymentProvider
 from app.providers.provider_a import ProviderA
 from app.providers.provider_b import ProviderB
 
+PROVIDERS = {
+    PaymentProvider.PROVIDER_A: ProviderA,
+    PaymentProvider.PROVIDER_B: ProviderB,
+}
+
 
 def get_provider(provider: PaymentProvider):
 
-    if provider == PaymentProvider.PROVIDER_A:
-        return ProviderA()
+    provider_class = PROVIDERS.get(provider)
 
-    if provider == PaymentProvider.PROVIDER_B:
-        return ProviderB()
+    if not provider_class:
+        raise ValueError("Unsupported payment provider")
 
-    raise ValueError("Unsupported payment provider")
+    return provider_class()
