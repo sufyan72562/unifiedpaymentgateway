@@ -9,6 +9,7 @@ class ProviderB(BasePaymentProvider):
     async def create_payment(
         self,
         payload,
+        idempotency_key: str | None = None,
     ) -> dict:
 
         return {

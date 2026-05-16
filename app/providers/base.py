@@ -10,6 +10,7 @@ class BasePaymentProvider(ABC):
     async def create_payment(
         self,
         payload: CreatePaymentRequest,
+        idempotency_key: str | None = None,
     ) -> dict:
         pass
 

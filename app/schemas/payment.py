@@ -11,7 +11,7 @@ class CreatePaymentRequest(BaseModel):
 
 class PaymentResponse(BaseModel):
     id: int
-    provider_reference: str
+    provider_reference: str | None = None
     amount: float
     currency: str
     status: str
