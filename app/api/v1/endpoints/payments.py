@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_db
@@ -20,13 +20,14 @@ router = APIRouter(tags=["Payments"])
 async def create_payment(
     payload: CreatePaymentRequest,
     db: AsyncSession = Depends(get_db),
+    idempotency_key: str = Header(..., alias="Idempotency-Key"),
 ):
-
     service = PaymentService(db)
 
-    payment = await service.create_payment(payload)
-
-    return payment
+    return await service.create_payment(
+        payload=payload,
+        idempotency_key=idempotency_key,
+    )
 
 
 @router.get(
@@ -37,18 +38,8 @@ async def get_payment(
     payment_id: int,
     db: AsyncSession = Depends(get_db),
 ):
-
     service = PaymentService(db)
-
-    payment = await service.get_payment(payment_id)
-
-    if not payment:
-        raise HTTPException(
-            status_code=404,
-            detail="Payment not found",
-        )
-
-    return payment
+    return await service.get_payment(payment_id)
 
 
 @router.post(
