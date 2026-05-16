@@ -24,11 +24,22 @@ class Settings(BaseSettings):
     # DATABASE
     # -------------------
     DATABASE_URL: str
+    DB_ECHO: bool = False
+    DB_POOL_SIZE: int = 5
+    DB_MAX_OVERFLOW: int = 10
+    DB_POOL_TIMEOUT: int = 30
+    DB_POOL_RECYCLE: int = 1800
+
 
     # -------------------
     # WEBHOOK
     # -------------------
     WEBHOOK_SECRET: str
+
+    SECRET_KEY: str
+    WEBHOOK_SECRET: str
+
+    LOG_LEVEL: str = "INFO"
 
 
 
