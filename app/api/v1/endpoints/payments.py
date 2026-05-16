@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Header, HTTPException
+import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_db
@@ -10,6 +11,8 @@ from app.schemas.refund import RefundRequest
 from app.services.payments import PaymentService
 
 router = APIRouter(tags=["Payments"])
+
+logger = logging.getLogger(__name__)
 
 
 @router.post(
@@ -23,6 +26,7 @@ async def create_payment(
     idempotency_key: str = Header(..., alias="Idempotency-Key"),
 ):
     service = PaymentService(db)
+    logger.debug("create_payment endpoint called", extra={"customer_id": payload.customer_id})
 
     return await service.create_payment(
         payload=payload,

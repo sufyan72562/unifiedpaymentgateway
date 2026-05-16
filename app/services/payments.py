@@ -1,9 +1,13 @@
+import logging
 from sqlalchemy.exc import IntegrityError
 
 from app.core.enums import PaymentStatus
 from app.db.models.payment import Payment
 from app.providers.factory import get_provider
 from app.repositories.payment import PaymentRepository
+
+
+logger = logging.getLogger(__name__)
 
 
 class PaymentService:
@@ -16,6 +20,10 @@ class PaymentService:
         payload,
         idempotency_key: str,
     ):
+        logger.debug(
+            "create_payment called",
+            extra={"provider": str(payload.provider), "customer_id": payload.customer_id},
+        )
         existing_payment = await self.payment_repo.get_by_idempotency_key(
             provider=payload.provider.value,
             customer_id=payload.customer_id,
@@ -44,6 +52,8 @@ class PaymentService:
 
         except IntegrityError:
             await self.db.rollback()
+
+            logger.info("integrity error on create, returning existing payment")
 
             return await self.payment_repo.get_by_idempotency_key(
                 provider=payload.provider.value,
@@ -75,6 +85,7 @@ class PaymentService:
             await self.db.commit()
             await self.db.refresh(payment)
 
+            logger.info("payment created and updated", extra={"payment_id": payment.id, "status": payment.status})
             return payment
 
         except Exception:
@@ -84,7 +95,10 @@ class PaymentService:
             await self.db.commit()
             await self.db.refresh(payment)
 
+            logger.exception("payment processing failed, marked as failed", extra={"payment_id": payment.id})
+
             raise
 
     async def get_payment(self, payment_id: int) -> Payment | None:
+        logger.debug("get_payment called", extra={"payment_id": payment_id})
         return await self.payment_repo.get_by_id(payment_id)

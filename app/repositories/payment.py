@@ -1,7 +1,11 @@
+import logging
 from sqlalchemy import select
 
 from app.db.models.payment import Payment
 from app.repositories.base import BaseRepository
+
+
+logger = logging.getLogger(__name__)
 
 
 class PaymentRepository(BaseRepository[Payment]):
@@ -13,6 +17,11 @@ class PaymentRepository(BaseRepository[Payment]):
         customer_id: str,
         idempotency_key: str,
     ) -> Payment | None:
+        logger.debug(
+            "querying payment by idempotency key",
+            extra={"provider": provider, "customer_id": customer_id, "idempotency_key": idempotency_key},
+        )
+
         query = select(Payment).where(
             Payment.provider == provider,
             Payment.customer_id == customer_id,
@@ -21,11 +30,13 @@ class PaymentRepository(BaseRepository[Payment]):
 
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
-    
+
     async def get_by_provider_reference(
         self,
         provider_reference: str,
     ) -> Payment | None:
+        logger.debug("querying payment by provider reference", extra={"provider_reference": provider_reference})
+
         query = select(Payment).where(
             Payment.provider_reference == provider_reference
         )
