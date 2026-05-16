@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Header
+from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_db
@@ -39,7 +39,12 @@ async def get_payment(
     db: AsyncSession = Depends(get_db),
 ):
     service = PaymentService(db)
-    return await service.get_payment(payment_id)
+    payment = await service.get_payment(payment_id)
+
+    if payment is None:
+        raise HTTPException(status_code=404, detail="Payment not found")
+
+    return payment
 
 
 @router.post(

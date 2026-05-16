@@ -1,6 +1,7 @@
 from sqlalchemy.exc import IntegrityError
 
 from app.core.enums import PaymentStatus
+from app.db.models.payment import Payment
 from app.providers.factory import get_provider
 from app.repositories.payment import PaymentRepository
 
@@ -84,3 +85,6 @@ class PaymentService:
             await self.db.refresh(payment)
 
             raise
+
+    async def get_payment(self, payment_id: int) -> Payment | None:
+        return await self.payment_repo.get_by_id(payment_id)
