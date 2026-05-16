@@ -1,85 +1,86 @@
+from sqlalchemy.exc import IntegrityError
+
+from app.core.enums import PaymentStatus
 from app.providers.factory import get_provider
 from app.repositories.payment import PaymentRepository
-from app.repositories.refund import RefundRepository
-from app.utils.mapper import normalize_provider_response
 
 
 class PaymentService:
-
     def __init__(self, db):
+        self.db = db
         self.payment_repo = PaymentRepository(db)
-        self.refund_repo = RefundRepository(db)
 
     async def create_payment(
         self,
         payload,
+        idempotency_key: str,
     ):
-
-        provider = get_provider(
-            payload.provider,
+        existing_payment = await self.payment_repo.get_by_idempotency_key(
+            provider=payload.provider.value,
+            customer_id=payload.customer_id,
+            idempotency_key=idempotency_key,
         )
 
-        provider_response = await provider.create_payment(
-            payload,
-        )
+        if existing_payment:
+            return existing_payment
 
-        normalized = normalize_provider_response(
-            payload.provider.value,
-            provider_response,
-        )
+        try:
+            payment = await self.payment_repo.create(
+                {
+                    "provider": payload.provider.value,
+                    "customer_id": payload.customer_id,
+                    "idempotency_key": idempotency_key,
+                    "provider_reference": None,
+                    "amount": payload.amount,
+                    "currency": payload.currency,
+                    "status": PaymentStatus.PROCESSING.value,
+                    "raw_response": None,
+                }
+            )
 
-        normalized["provider"] = payload.provider.value
+            await self.db.commit()
+            await self.db.refresh(payment)
 
-        payment = await self.payment_repo.create(
-            normalized,
-        )
+        except IntegrityError:
+            await self.db.rollback()
 
-        return payment
+            return await self.payment_repo.get_by_idempotency_key(
+                provider=payload.provider.value,
+                customer_id=payload.customer_id,
+                idempotency_key=idempotency_key,
+            )
 
-    async def get_payment(
-        self,
-        payment_id: int,
-    ):
+        provider = get_provider(payload.provider)
 
-        return await self.payment_repo.get_by_id(
-            payment_id,
-        )
+        try:
+            raw_response = await provider.create_payment(
+                payload=payload,
+                idempotency_key=idempotency_key,
+            )
 
-    async def refund_payment(
-        self,
-        payment_id: int,
-        payload,
-    ):
+            normalized = provider.normalize_payment_response(raw_response)
 
-        payment = await self.payment_repo.get_by_id(
-            payment_id,
-        )
+            await self.payment_repo.update(
+                payment,
+                {
+                    "provider_reference": normalized["provider_reference"],
+                    "amount": normalized["amount"],
+                    "currency": normalized["currency"],
+                    "status": normalized["status"],
+                    "raw_response": normalized["raw_response"],
+                },
+            )
 
-        if not payment:
-            raise ValueError("Payment not found")
+            await self.db.commit()
+            await self.db.refresh(payment)
 
-        provider = get_provider(
-            payment.provider,
-        )
+            return payment
 
-        provider_response = await provider.refund_payment(
-            provider_reference=payment.provider_reference,
-            payload=payload,
-        )
+        except Exception:
+            await self.db.rollback()
 
-        refund = await self.refund_repo.create(
-            {
-                "payment_id": payment.id,
-                "amount": payload.amount,
-                "reason": payload.reason,
-                "provider_reference": provider_response.get(
-                    "refund_id"
-                )
-                or provider_response.get(
-                    "refundTransactionId"
-                ),
-                "raw_response": provider_response,
-            }
-        )
+            payment.status = PaymentStatus.FAILED.value
+            await self.db.commit()
+            await self.db.refresh(payment)
 
-        return refund
+            raise

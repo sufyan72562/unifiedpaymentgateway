@@ -1,32 +1,23 @@
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.payment import Payment
+from app.repositories.base import BaseRepository
 
 
-class PaymentRepository:
+class PaymentRepository(BaseRepository[Payment]):
+    model = Payment
 
-    def __init__(self, db: AsyncSession):
-        self.db = db
-
-    async def create(self, data: dict):
-
-        payment = Payment(**data)
-
-        self.db.add(payment)
-
-        await self.db.commit()
-
-        await self.db.refresh(payment)
-
-        return payment
-
-    async def get_by_id(self, payment_id: int):
-
+    async def get_by_idempotency_key(
+        self,
+        provider: str,
+        customer_id: str,
+        idempotency_key: str,
+    ) -> Payment | None:
         query = select(Payment).where(
-            Payment.id == payment_id
+            Payment.provider == provider,
+            Payment.customer_id == customer_id,
+            Payment.idempotency_key == idempotency_key,
         )
 
         result = await self.db.execute(query)
-
         return result.scalar_one_or_none()

@@ -7,6 +7,7 @@ class PaymentProvider(str, Enum):
 
 
 class PaymentStatus(str, Enum):
+    PROCESSING = "PROCESSING"
     PENDING = "PENDING"
     SUCCESS = "SUCCESS"
     FAILED = "FAILED"

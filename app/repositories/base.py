@@ -14,22 +14,11 @@ class BaseRepository(Generic[ModelType]):
 
     async def create(self, data: dict) -> ModelType:
         instance = self.model(**data)
-
         self.db.add(instance)
 
         await self.db.flush()
-        await self.db.refresh(instance)
 
         return instance
-
-    async def get_by_id(self, item_id: int) -> ModelType | None:
-        query = select(self.model).where(
-            self.model.id == item_id
-        )
-
-        result = await self.db.execute(query)
-
-        return result.scalar_one_or_none()
 
     async def update(
         self,
@@ -40,6 +29,13 @@ class BaseRepository(Generic[ModelType]):
             setattr(instance, field, value)
 
         await self.db.flush()
-        await self.db.refresh(instance)
 
         return instance
+
+    async def get_by_id(self, item_id: int) -> ModelType | None:
+        query = select(self.model).where(
+            self.model.id == item_id
+        )
+
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
